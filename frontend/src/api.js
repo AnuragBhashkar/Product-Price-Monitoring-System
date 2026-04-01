@@ -12,6 +12,18 @@ const apiClient = axios.create({
   }
 });
 
-export const getProducts = () => apiClient.get('/products/');
-export const getAnalytics = () => apiClient.get('/analytics/'); 
-export const triggerRefresh = () => apiClient.post('/scraper/run'); // Adjust to match your exact scraper route if needed
+// We map 'filters' directly to axios 'params' - axios handles the ?source=... automatically!
+export const fetchProducts = async (filters = {}) => {
+    const response = await apiClient.get('/products/', { params: filters });
+    return response.data; // Axios automatically parses the JSON
+};
+
+export const fetchAnalytics = async () => {
+    const response = await apiClient.get('/analytics/');
+    return response.data;
+}; 
+
+export const triggerScraper = async () => {
+    const response = await apiClient.post('/scraper/run');
+    return response.data;
+};
