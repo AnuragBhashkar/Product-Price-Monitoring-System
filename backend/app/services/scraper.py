@@ -5,12 +5,13 @@ import logging
 from sqlalchemy.orm import Session
 from datetime import datetime
 from backend.app.models import Product, PriceHistory
+from backend.app.services.notifier import send_price_change_notification
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ==========================================
-# 1. RETRY LOGIC (Required by Assignment)
+# 1. RETRY LOGIC
 # ==========================================
 def async_retry(retries=3, delay=1):
     """Decorator to automatically retry failed async operations."""
@@ -29,7 +30,7 @@ def async_retry(retries=3, delay=1):
     return decorator
 
 # ==========================================
-# 2. ASYNC FETCHING (Required by Assignment)
+# 2. ASYNC FETCHING
 # ==========================================
 @async_retry(retries=3, delay=2)
 async def fetch_json_data(file_path: str):
@@ -44,13 +45,32 @@ async def fetch_json_data(file_path: str):
 # ==========================================
 def extract_product_data(item: dict, source: str):
     """Safely extracts data regardless of the marketplace schema."""
-    # This is a generic extractor. It tries common keys.
+    
+    # Safely get metadata dictionary if it exists
+    meta = item.get('metadata', {})
+    
+    # Extract category based on what each marketplace provides
+    category = (
+        item.get('category') or 
+        meta.get('garment_type') or  # Fashionphile uses this
+        meta.get('style') or         # Grailed uses this
+        item.get('brand') or         # 1stdibs fallback
+        'Uncategorized'
+    )
+
     return {
-        "source_product_id": str(item.get('id') or item.get('productId') or item.get('uuid', 'unknown')),
-        "name": item.get('name') or item.get('title') or 'Unknown Product',
-        "category": item.get('category') or 'Uncategorized',
-        "current_price": float(item.get('price') or item.get('currentPrice') or item.get('amount') or 0.0),
-        "url": item.get('url') or item.get('productUrl') or '',
+        # Check 'product_id' first since all 3 use it
+        "source_product_id": str(item.get('product_id') or item.get('id') or 'unknown'),
+        
+        # Check 'model' first since all 3 use it
+        "name": item.get('model') or item.get('name') or item.get('title') or 'Unknown Product',
+        
+        "category": str(category),
+        "current_price": float(item.get('price') or 0.0),
+        
+        # Check 'product_url' first
+        "url": item.get('product_url') or item.get('url') or '',
+        
         "source_marketplace": source
     }
 
@@ -65,7 +85,7 @@ async def process_file(file_path: str, source_name: str, db: Session):
         for item in items:
             parsed = extract_product_data(item, source_name)
             
-            # Skip invalid data
+    
             if not parsed["source_product_id"] or parsed["current_price"] == 0.0:
                 continue
 
@@ -87,16 +107,27 @@ async def process_file(file_path: str, source_name: str, db: Session):
             else:
                 # 2. Check for PRICE CHANGE
                 if product.current_price != parsed["current_price"]:
-                    logger.info(f"Price change detected for {product.name}: {product.current_price} -> {parsed['current_price']}")
+                    old_price = product.current_price
+                    new_price = parsed["current_price"]
                     
-                    product.current_price = parsed["current_price"]
+                    logger.info(f"Price change detected for {product.name}: {old_price} -> {new_price}")
+                    
+                    product.current_price = new_price
                     product.last_updated = datetime.utcnow()
                     
                     # Record the new price in history
-                    history = PriceHistory(product_id=product.id, price=parsed["current_price"])
+                    history = PriceHistory(product_id=product.id, price=new_price)
                     db.add(history)
                     
-                    # TODO: Trigger Notification System Here (We will build this later)
+                    # TRIGGER NOTIFICATION (Fire and forget, doesn't block scraper)
+                    asyncio.create_task(
+                        send_price_change_notification(
+                            product_name=product.name,
+                            old_price=old_price,
+                            new_price=new_price,
+                            source=product.source_marketplace
+                        )
+                    )
             
         db.commit()
         logger.info(f"Successfully processed {file_path}")
