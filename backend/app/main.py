@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
-from .routers import products,analytics 
+from .routers import products,analytics,scraper
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,19 @@ app.add_middleware(
 # REGISTER THE ROUTER
 app.include_router(products.router)
 app.include_router(analytics.router)
+app.include_router(scraper.router, prefix="/scraper", tags=["Scraper"])
+
+@app.on_event("startup")
+def startup_populate_db():
+    from .database import SessionLocal
+    from .models import APIConsumer
+    db = SessionLocal()
+    # Check if our test key exists, if not, create it
+    if not db.query(APIConsumer).filter(APIConsumer.api_key == "test_secret_key").first():
+        new_consumer = APIConsumer(api_key="test_secret_key")
+        db.add(new_consumer)
+        db.commit()
+    db.close()
 
 @app.get("/")
 def read_root():

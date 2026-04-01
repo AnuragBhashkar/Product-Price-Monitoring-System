@@ -50,7 +50,7 @@ def extract_product_data(item: dict, source: str):
     meta = item.get('metadata', {})
     
     # Extract category based on what each marketplace provides
-    category = (
+    raw_category = (
         item.get('category') or 
         meta.get('garment_type') or  # Fashionphile uses this
         meta.get('style') or         # Grailed uses this
@@ -58,19 +58,28 @@ def extract_product_data(item: dict, source: str):
         'Uncategorized'
     )
 
+    # --- NEW CLEANUP RULE ---
+    category_str = str(raw_category).strip()
+    
+    # If it's a massive dump of text...
+    if len(category_str) > 35:
+        # If there's a colon (e.g., "Fashion Belt: PENDANT SHAPE..."), split and keep the first part
+        if ":" in category_str:
+            category_str = category_str.split(":")[0].strip()
+        else:
+            # Otherwise, gracefully truncate around 30 chars without cutting words in half
+            category_str = category_str[:30].rsplit(' ', 1)[0] + "..."
+            
+    if not category_str:
+        category_str = 'Uncategorized'
+    # ------------------------
+
     return {
-        # Check 'product_id' first since all 3 use it
         "source_product_id": str(item.get('product_id') or item.get('id') or 'unknown'),
-        
-        # Check 'model' first since all 3 use it
         "name": item.get('model') or item.get('name') or item.get('title') or 'Unknown Product',
-        
-        "category": str(category),
+        "category": category_str,
         "current_price": float(item.get('price') or 0.0),
-        
-        # Check 'product_url' first
         "url": item.get('product_url') or item.get('url') or '',
-        
         "source_marketplace": source
     }
 
@@ -79,13 +88,23 @@ async def process_file(file_path: str, source_name: str, db: Session):
     try:
         data = await fetch_json_data(file_path)
         
-        # Some JSONs are lists, some are dicts wrapping a list. We ensure it's a list here.
-        items = data if isinstance(data, list) else data.get('items', data.get('data', []))
-        
+        # More robust extraction - checks common keys or wraps a single dict in a list
+        if isinstance(data, list):
+            items = data
+        else:
+            items = data.get('items') or data.get('data') or data.get('products') or data.get('results')
+            # If it's a single dictionary item, wrap it in a list
+            if items is None and isinstance(data, dict) and ('name' in data or 'model' in data or 'title' in data):
+                items = [data]
+            elif items is None:
+                items = []
+
+        # LOG THE COUNT SO WE CAN SEE IT!
+        logger.info(f"Found {len(items)} items to process in {file_path}")
+
         for item in items:
             parsed = extract_product_data(item, source_name)
             
-    
             if not parsed["source_product_id"] or parsed["current_price"] == 0.0:
                 continue
 
@@ -130,27 +149,27 @@ async def process_file(file_path: str, source_name: str, db: Session):
                     )
             
         db.commit()
-        logger.info(f"Successfully processed {file_path}")
+        logger.info(f"Successfully committed data for {file_path}")
         
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to process {file_path}: {e}")
 
 async def run_all_scrapers(db: Session):
-    """Orchestrates the scraping of all local sample files concurrently."""
+    """Orchestrates the scraping of all local sample files sequentially to protect the DB session."""
     sample_dir = "sample_data"
     if not os.path.exists(sample_dir):
         logger.error("sample_data directory not found!")
         return
 
-    tasks = []
+    # Process files sequentially instead of concurrent gather
     for filename in os.listdir(sample_dir):
         if not filename.endswith('.json'):
             continue
             
         file_path = os.path.join(sample_dir, filename)
         
-        # Determine source marketplace from filename (e.g., 'grailed_...', '1stdibs_...')
+        # Determine source marketplace from filename
         if 'grailed' in filename.lower():
             source = 'Grailed'
         elif 'fashionphile' in filename.lower():
@@ -160,8 +179,5 @@ async def run_all_scrapers(db: Session):
         else:
             source = 'Unknown'
 
-        # Create an async task for each file
-        tasks.append(process_file(file_path, source, db))
-        
-    # Run them all concurrently
-    await asyncio.gather(*tasks)
+        # await EACH file one by one so the DB session doesn't get locked/confused
+        await process_file(file_path, source, db)
