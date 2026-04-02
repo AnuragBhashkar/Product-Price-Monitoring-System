@@ -326,13 +326,13 @@ function Dashboard() {
                         </span>
                       </td>
                       <td className="p-4 font-bold text-emerald-400">${product.current_price.toFixed(2)}</td>
-                      <td className="p-4 text-right relative z-10 w-[160px]">
+                      <td className="p-4 text-right relative z-10 w-[140px]">
                         <div className="flex justify-end">
                           <Link
                             to={`/product/${product.id}`}
-                            className="inline-flex items-center justify-center gap-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm w-full"
+                            className="inline-flex items-center justify-center gap-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm w-full whitespace-nowrap"
                           >
-                            Chart & Details <span className="ml-1">&rarr;</span>
+                            View Details <span className="ml-1">&rarr;</span>
                           </Link>
                         </div>
                       </td>
