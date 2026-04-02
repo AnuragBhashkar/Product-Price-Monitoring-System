@@ -5,7 +5,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
-from ..models import Product, PriceHistory
+from ..models import Product, PriceHistory, Notification
 from .notifier import send_price_change_notification
 
 logging.basicConfig(level=logging.INFO)
@@ -126,6 +126,10 @@ async def process_file(file_path: str, source_name: str, db: Session):
                 product.current_price = new_price
                 product.last_updated = datetime.utcnow()
                 db.add(PriceHistory(product_id=product.id, price=new_price))
+
+                # Add physical notification to DB for frontend UI
+                message = f"🚨 PRICE ALERT [{product.source_marketplace}]: '{product.name}' changed from ${old_price} to ${new_price}."
+                db.add(Notification(message=message))
 
                 # Fire-and-forget: notification runs off the main thread so it cannot delay ingestion
                 asyncio.create_task(

@@ -35,3 +35,11 @@ class PriceHistory(Base):
     detected_at = Column(DateTime, default=datetime.utcnow)
 
     product = relationship("Product", back_populates="price_history")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String)
+    is_read = Column(Integer, default=0) # SQLite natively stores boolean as 0 or 1
+    created_at = Column(DateTime, default=datetime.utcnow)

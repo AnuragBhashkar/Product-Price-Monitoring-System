@@ -50,3 +50,11 @@ class AnalyticsOut(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+class NotificationOut(BaseModel):
+    id: int
+    message: str
+    is_read: int
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)

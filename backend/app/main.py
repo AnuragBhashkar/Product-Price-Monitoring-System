@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
-from .routers import products, analytics, scraper
+from .routers import products, analytics, scraper, notifications
 
 
 @asynccontextmanager
@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(products.router)
 app.include_router(analytics.router)
 app.include_router(scraper.router, prefix="/scraper", tags=["Scraper"])
+app.include_router(notifications.router)
 
 
 @app.get("/")

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchProducts, fetchAnalytics, triggerScraper } from './api';
+import { fetchProducts, fetchAnalytics, triggerScraper, fetchNotifications, markNotificationRead } from './api';
 import { Link } from 'react-router-dom';
 
 function Dashboard() {
@@ -8,6 +8,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [lastNotificationId, setLastNotificationId] = useState(0);
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -53,6 +55,52 @@ function Dashboard() {
     loadData();
   }, [debouncedSearch, source, category, minPrice, maxPrice]);
 
+  // Poll for new notifications
+  useEffect(() => {
+    const pollNotifications = async () => {
+      try {
+        const activeNotifs = await fetchNotifications();
+        if (activeNotifs.length > 0) {
+          setNotifications(prev => {
+            const newIds = activeNotifs.map(n => n.id);
+            const filteredPrev = prev.filter(p => newIds.includes(p.id));
+            const existingIds = filteredPrev.map(p => p.id);
+            const additions = activeNotifs.filter(n => !existingIds.includes(n.id));
+            
+            if (additions.length > 0) {
+              const maxId = Math.max(...additions.map(a => a.id));
+              setLastNotificationId(prev => Math.max(prev, maxId));
+            }
+            
+            return [...filteredPrev, ...additions];
+          });
+        }
+      } catch (err) {
+        console.error("Polling error", err);
+      }
+    };
+    pollNotifications();
+    const interval = setInterval(pollNotifications, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Whenever we receive a newly generated notification ID, auto-refresh the UI data
+  useEffect(() => {
+    if (lastNotificationId > 0) {
+      loadData();
+    }
+  }, [lastNotificationId]);
+
+  const handleDismissNotification = async (id) => {
+    // Optimistically remove from UI
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await markNotificationRead(id);
+    } catch (err) {
+      console.error("Failed to mark read", err);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -83,6 +131,25 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-transparent p-0 text-gray-200">
+      
+      {/* Floating Notifications UI */}
+      <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
+        {notifications.map(notif => (
+          <div key={notif.id} className="bg-amber-950 border border-amber-500/50 text-amber-50 p-4 rounded-2xl shadow-2xl flex items-start gap-3 w-[350px] transform transition-all hover:scale-105">
+            <div className="flex-1">
+              <p className="font-medium text-sm leading-snug">{notif.message}</p>
+              <button 
+                onClick={() => handleDismissNotification(notif.id)}
+                className="mt-3 bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-colors"
+              >
+                Acknowledge ✓
+              </button>
+            </div>
+            <button onClick={() => handleDismissNotification(notif.id)} className="text-amber-400 hover:text-white relative -top-1">✕</button>
+          </div>
+        ))}
+      </div>
+
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
@@ -118,14 +185,29 @@ function Dashboard() {
                 Products by Source
               </h2>
               <div className="space-y-3">
-                {analytics.by_source.map((item) => (
-                  <div key={item.source_marketplace} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-xl border border-gray-700/30">
-                    <span className="font-medium text-gray-200">{item.source_marketplace}</span>
-                    <span className="bg-blue-500/20 text-blue-400 py-1 px-3 rounded-full text-sm font-bold border border-blue-500/30">
+                {analytics.by_source.map((item) => {
+                  const isSelected = source === item.source_marketplace;
+                  return (
+                  <button 
+                    key={item.source_marketplace} 
+                    onClick={() => setSource(isSelected ? '' : item.source_marketplace)}
+                    className={`w-full flex justify-between items-center p-3 rounded-xl border transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'bg-blue-900/40 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]' 
+                        : 'bg-gray-800/50 border-gray-700/30 hover:bg-gray-800 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className={`font-medium ${isSelected ? 'text-blue-100' : 'text-gray-200'}`}>{item.source_marketplace}</span>
+                    <span className={`py-1 px-3 rounded-full text-sm font-bold border ${
+                      isSelected 
+                        ? 'bg-blue-500 text-white border-blue-400' 
+                        : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                    }`}>
                       {item.total_products} items
                     </span>
-                  </div>
-                ))}
+                  </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -133,13 +215,24 @@ function Dashboard() {
               <h2 className="text-sm font-semibold text-gray-400 mb-4 uppercase tracking-wider">
                 Average Price by Category
               </h2>
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                {analytics.by_category.map((item) => (
-                  <div key={item.category} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-xl border border-gray-700/30">
-                    <span className="font-medium truncate mr-4 text-gray-300">{item.category}</span>
-                    <span className="text-emerald-400 font-bold whitespace-nowrap">${item.average_price.toFixed(2)}</span>
-                  </div>
-                ))}
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {analytics.by_category.map((item) => {
+                  const isSelected = category === item.category;
+                  return (
+                  <button 
+                    key={item.category} 
+                    onClick={() => setCategory(isSelected ? '' : item.category)}
+                    className={`w-full flex justify-between items-center p-3 rounded-xl border transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'bg-emerald-900/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                        : 'bg-gray-800/50 border-gray-700/30 hover:bg-gray-800 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className={`font-medium truncate mr-4 ${isSelected ? 'text-emerald-100' : 'text-gray-300'}`}>{item.category}</span>
+                    <span className={`font-bold whitespace-nowrap ${isSelected ? 'text-emerald-300' : 'text-emerald-400'}`}>${item.average_price.toFixed(2)}</span>
+                  </button>
+                  );
+                })}
               </div>
             </div>
           </div>

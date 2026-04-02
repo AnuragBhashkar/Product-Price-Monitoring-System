@@ -12,10 +12,9 @@ const apiClient = axios.create({
   }
 });
 
-// We map 'filters' directly to axios 'params' - axios handles the ?source=... automatically!
 export const fetchProducts = async (filters = {}) => {
     const response = await apiClient.get('/products/', { params: filters });
-    return response.data; // Axios automatically parses the JSON
+    return response.data; 
 };
 
 export const fetchAnalytics = async () => {
@@ -30,5 +29,15 @@ export const triggerScraper = async () => {
 
 export const fetchProductDetails = async (productId) => {
     const response = await apiClient.get(`/products/${productId}`);
+    return response.data;
+};
+
+export const fetchNotifications = async () => {
+    const response = await apiClient.get('/notifications/');
+    return response.data;
+};
+
+export const markNotificationRead = async (id) => {
+    const response = await apiClient.post(`/notifications/${id}/mark-read`);
     return response.data;
 };
