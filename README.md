@@ -1,6 +1,5 @@
 # Entrupy Product Price Monitoring System
 
-
 A full-stack, automated Product Price Monitoring System engineered to track competitor pricing across premium e-commerce marketplaces like Grailed, Fashionphile, and 1stdibs. 
 
 The architecture dynamically ingests product data, tracks sub-dollar price fluctuations, exposes robust analytical endpoints, reliably triggers asynchronous notifications upon price changes, and visualises the data in a highly interactive, glassmorphic React dashboard.
@@ -9,14 +8,23 @@ The architecture dynamically ingests product data, tracks sub-dollar price fluct
 
 ## 📸 Project Showcase
 
-<p align="center">
-  <img src="assets/Dashboard_view.png" width="48%" alt="Dashboard View">
-  <img src="assets/Dashboard_View2.png" width="48%" alt="Analytics and Filters">
-</p>
-<p align="center">
-  <img src="assets/Product_price_graph.png" width="48%" alt="Timeseries Price Graph">
-  <img src="assets/Price_notifications.png" width="48%" alt="Real-time Price Notifications">
-</p>
+### 📊 System Dashboard
+![Dashboard Preview](assets/Dashboard_view.png)
+
+![Dashboard Analytics](assets/Dashboard_View2.png)
+*The central dashboard displaying real-time analytics aggregations, category filters, and safely captured product pipelines across marketplaces.*
+
+---
+
+### 🌐 Global Real-Time Notifications
+![Global Notifications](assets/Price_notifications.png)
+*Instant, cross-view toast notifications powered by a decoupled background poller, alerting users to price changes exactly when they happen without requiring manual refreshes.*
+
+---
+
+### 📈 Intelligent Price History Graph
+![Price History Chart](assets/Product_price_graph.png)
+*Interactive tracking of price fluctuations across multiple marketplaces with intelligent auto-scaling axes and high-resolution timeline tracking.*
 
 ---
 
@@ -58,22 +66,58 @@ The dashboard is now instantly viewable at `http://localhost:5173`.
 
 ---
 
-## 📂 System Architecture & Project Structure
+## 📂 Project Structure
 
-We elected for a strict, decoupled Monorepo architecture enforcing the **Single Responsibility Principle (SRP)** on both servers.
+We elected for a strict, decoupled Monorepo architecture enforcing the **Single Responsibility Principle (SRP)** on both servers. This ensures massive scalability and clean routing overrides.
 
-### Backend Architecture (Async Core)
-Built on **FastAPI**. Native `asyncio` is critical here to ensure background notification webhooks and heavy disk-I/O parsing jobs do not block the primary HTTP event loop.
-* `routers/` — Pure API endpoint declarations. No business logic.
-* `services/` — Core business logic, data extraction, and exponential backoff retry engines.
-* `models.py` — SQLAlchemy ORM schema definitions ensuring normalized relational integrity.
-* `schemas.py` — Strict Pydantic Data validation schemas guaranteeing zero bad payloads.
-
-### Frontend Architecture (Reactive UI)
-Built with **React + Vite**. We heavily utilize React Hooks (`useEffect`, `useState`) to manage non-blocking, asynchronous polling against the backend APIs.
-* `api.js` — Dedicated Axios wrapper abstracting all network requests and API key injection.
-* `Dashboard.jsx` — The core analytical grid featuring debounced searching, instant data reactivity, and floating Amber-themed toast polling architectures.
-* `ProductDetail.jsx` — Dynamic Recharts integration visualizing historical price elasticity.
+```text
+Product-Price-Monitoring-System/
+├── backend/
+│   ├── app/
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   ├── analytics.py      # /analytics aggregations
+│   │   │   ├── notifications.py  # /notifications webhooks
+│   │   │   ├── products.py       # /products endpoints
+│   │   │   └── scraper.py        # POST scraper triggers
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   └── scraper.py        # Core ingestion engine & DB syncing
+│   │   ├── __init__.py
+│   │   ├── auth.py               # API key validation dependency
+│   │   ├── database.py           # SQLite connection & sessionmaker
+│   │   ├── main.py               # FastAPI application startup & lifespan
+│   │   ├── models.py             # SQLAlchemy ORM declarations
+│   │   └── schemas.py            # Pydantic Type validation pipelines
+│   └── tests/
+│       ├── __init__.py
+│       ├── conftest.py           # Pytest fixtures and isolated in-memory DB setups
+│       ├── test_api.py           # End-to-end integration mapping tests
+│       └── test_scraper.py       # Idempotency and parsing integrity tests
+│
+├── frontend/
+│   ├── public/
+│   │   └── vite.svg
+│   ├── src/
+│   │   ├── assets/
+│   │   │   └── react.svg
+│   │   ├── api.js                # Fully abstracted Axios HTTP logic
+│   │   ├── App.jsx               # React Router DOM layout container
+│   │   ├── Dashboard.jsx         # Analytical grid, debounce filters, and Toast engine
+│   │   ├── index.css             # Tailwindcss injection
+│   │   ├── main.jsx              # React DOM mapping entry
+│   │   └── ProductDetail.jsx     # Full-page Recharts visualization orchestrator
+│   ├── eslint.config.js          # Linter constraints
+│   ├── index.html                # App injection target
+│   ├── package.json              # Client dependencies
+│   └── vite.config.js            # Build pipeline definitions
+│
+├── assets/                       # Markdown layout UI showcase images
+├── sample_data/                  # (90 mock JSON files representing Grailed, 1stdibs, Fashionphile payload bodies)
+├── .gitignore                    # Environment & credential lockouts
+├── requirements.txt              # Strictly pinned backend dependencies
+└── README.md                     # This canonical documentation
+```
 
 ---
 
@@ -93,7 +137,7 @@ As a product's price history grows exponentially, a naive `SELECT *` becomes a f
 #### 3. How would you extend this system to 100+ data sources?
 * **Interface Segregation:** We would replace procedural filename-checking with a strict `AbstractMarketplaceExtractor` OOP interface defining `fetch()` and `normalize()`. Each of the 100+ sites becomes an isolated plugin subclass.
 * **Category Normalization Pipeline (NLP):** 100 target sites will have 100 different naming conventions ("Men's Belts", "Leather Belts", "Streetwear Belt"). Rather than hardcoding mapping logic, I would route raw category texts through a lightweight NLP classifier (e.g., standardizing everything to `Belts`).
-* **Distributed Task Queue:** Relying solely on FastAPI `BackgroundTasks` will fail under the weight of 100 sources. The ingest architecture must migrate to **Celery + Redis** (or AWS SQS) to horizontally distribute scraping jobs across an auto-scaling cluster of independent worker nodes.
+* **Distributed Task Queue:** Relying solely on FastAPI `BackgroundTasks` will fail under the weight of 100 sources. The ingest architecture must migrate to **Celery + Redis** (or AWS SQS) to horizontally distribute scraping jobs across an auto-scaling cluster of independent worker nodes so one slow source never blocks the rest.
 
 ---
 
@@ -103,10 +147,10 @@ As a product's price history grows exponentially, a naive `SELECT *` becomes a f
 `X-API-Key: test_secret_key`
 
 ### `POST /scraper/run` | Trigger Background Ingestion
-Initiates an async job to ingest raw data payloads, normalize them, and track sub-dollar price shifts. Immediately returns a `202 Accepted` status, rather than forcing the client to wait for disk I/O.
+Initiates an async job to ingest raw data payloads, normalize them, and track sub-dollar price shifts. Immediately returns a `202 Accepted` status, rather than forcing the client to wait for delayed disk I/O.
 
 ### `GET /analytics/` | System Health Aggregations
-A high-velocity endpoint utilizing SQLAlchemy `func.count()` to aggregate real-time metrics across all normalized marketplaces.
+A high-velocity endpoint utilizing SQLAlchemy `func.count()` to aggregate real-time metrics across all normalized marketplaces. Does not perform massive Python-side aggregations.
 ```json
 {
   "by_source": [
@@ -139,14 +183,14 @@ We do not just test the "happy path". The testing suite leverages heavily isolat
 Run the test suite via: `python -m pytest backend/tests/`
 
 **Exactly 11 End-to-End Tests Implemented:**
-1. `test_invalid_api_key`: Asserts secure `401 Unauthorized` rejection envelopes.
+1. `test_invalid_api_key`: Asserts secure `401 Unauthorized` rejection envelopes securely.
 2. `test_valid_api_key`: Verifies JWT/API Key handshake acceptance.
 3. `test_parse_and_store_new_product`: Verifies raw schema normalization execution.
 4. `test_parse_and_store_price_update`: Asserts **Idempotency** (identical scrapes refuse to bloat DB) whilst logging valid price-shift deltas.
 5. `test_list_products_no_auth`: Guarantees endpoint lock-down.
 6. `test_list_products_with_auth`: Validates core unpaginated list retrieval.
-7. `test_get_analytics`: Confirms absolute aggregate accuracy for dashboard widgets.
-8. `test_get_product_detail`: Checks relational `joinedload` schema extraction.
+7. `test_get_analytics`: Confirms absolute aggregate accuracy for dashboard metric pipelines.
+8. `test_get_product_detail`: Checks relational canonical `joinedload` schema extraction to avoid N+1 queries.
 9. `test_get_product_not_found`: Asserts robust `404 Not Found` error handling.
 10. `test_run_scraper`: Monitors the async execution payload injection.
 11. `test_run_scraper_handles_exception`: Validates that structurally corrupt JSON mock files are gracefully rejected via `JSONDecodeError` without crashing the core API pool.
@@ -155,8 +199,6 @@ Run the test suite via: `python -m pytest backend/tests/`
 
 ## 🚧 Roadmap & Known Limitations
 
-If provided further development time, I would target the following system upgrades:
-
-* **Eject from SQLite:** Currently operating on SQLite. In a legitimate multi-threaded production environment, local `.db` locks will cause severe write-contention. Migrating to Dockerized **PostgreSQL** is strictly mandatory.
-* **WebSocket Polling:** The React UI currently executes lightweight HTTP polling every 4 seconds to locate new alerts. While functional, migrating to a WebSocket (WS) architecture (or utilizing Postgres `LISTEN/NOTIFY`) would guarantee sub-millisecond anomaly renders.
-* **Authentication Hierarchy:** Expand plain-text API Keys into secure OAuth2 / JWT access tokens with rotating expirations and scoped Role-Based Access Control (RBAC).
+* **Eject from SQLite:** Currently operating on SQLite WAL mode. In a legitimate multi-threaded production environment, local `.db` locks will cause severe write-contention. Migrating to Dockerized **PostgreSQL** is strictly mandatory.
+* **WebSocket Polling:** The React UI currently executes lightweight HTTP polling every 4 seconds to locate new alerts. While functional, migrating to a WebSocket (WS) architecture (or utilizing Postgres `LISTEN/NOTIFY`) would guarantee instant anomaly dispatch events without heavy polling overhead.
+* **Authentication Hierarchy:** Expand static plain-text API Keys into secure OAuth2 / JWT access tokens with rotating expirations and scoped Role-Based Access Control (RBAC).
