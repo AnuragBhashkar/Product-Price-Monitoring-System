@@ -4,6 +4,19 @@ A full-stack, automated Product Price Monitoring System built to track competito
 
 ---
 
+## 📸 Project Showcase
+
+<p align="center">
+  <img src="assets/Dashboard_view.png" width="48%" alt="Dashboard View">
+  <img src="assets/Dashboard_View2.png" width="48%" alt="Analytics and Filters">
+</p>
+<p align="center">
+  <img src="assets/Product_price_graph.png" width="48%" alt="Timeseries Price Graph">
+  <img src="assets/Price_notifications.png" width="48%" alt="Real-time Price Notifications">
+</p>
+
+---
+
 ## 🚀 How to Run It (Quick Start Guide)
 
 The application is heavily decoupled into two distinct tiers: the Python backend and the React frontend. **Both must be running.**
