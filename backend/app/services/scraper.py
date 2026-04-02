@@ -52,19 +52,32 @@ def extract_product_data(item: dict, source: str):
         'Uncategorized'
     )
 
-    category_str = str(raw_category).strip()
+    category_str = str(raw_category).strip().lower()
 
-    # Truncate runaway category strings that are actually full descriptions, not category labels
-    if len(category_str) > 35:
-        if ":" in category_str:
-            category_str = category_str.split(":")[0].strip()
-        else:
-            category_str = category_str[:30].rsplit(' ', 1)[0] + "..."
+    # Normalise into a cleaner, broader set of standard categories
+    if 'belt' in category_str:
+        final_category = 'Belts'
+    elif 'bag' in category_str or 'purse' in category_str or 'tote' in category_str or 'clutch' in category_str:
+        final_category = 'Bags'
+    elif 'shirt' in category_str or 'tee' in category_str or 'top' in category_str or 'blouse' in category_str:
+        final_category = 'Shirts'
+    elif 'jacket' in category_str or 'coat' in category_str or 'outerwear' in category_str:
+        final_category = 'Outerwear'
+    elif 'shoe' in category_str or 'sneaker' in category_str or 'boot' in category_str or 'heel' in category_str:
+        final_category = 'Shoes'
+    elif 'jewelry' in category_str or 'jewellery' in category_str or 'necklace' in category_str or 'ring' in category_str or 'bracelet' in category_str:
+        final_category = 'Jewelry'
+    elif 'chanel' in category_str:
+        final_category = 'Chanel'
+    elif 'dress' in category_str:
+        final_category = 'Dresses'
+    else:
+        final_category = 'Other / Accessories'
 
     return {
         "source_product_id": str(item.get('product_id') or item.get('id') or 'unknown'),
         "name": item.get('model') or item.get('name') or item.get('title') or 'Unknown Product',
-        "category": category_str or 'Uncategorized',
+        "category": final_category,
         "current_price": float(item.get('price') or 0.0),
         "url": item.get('product_url') or item.get('url') or '',
         "source_marketplace": source

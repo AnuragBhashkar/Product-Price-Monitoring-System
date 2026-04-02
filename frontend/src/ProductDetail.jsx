@@ -57,8 +57,8 @@ function ProductDetail() {
   const { product, price_history } = data;
 
   return (
-    <div className="min-h-screen bg-transparent p-0 text-gray-200">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-transparent p-0 text-gray-200 flex flex-col py-4">
+      <div className="max-w-5xl mx-auto space-y-5 w-full flex-grow flex flex-col">
         
         {/* Navigation */}
         <button 
@@ -70,8 +70,8 @@ function ProductDetail() {
         </button>
 
         {/* Product Header Card */}
-        <div className="bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800/50 overflow-hidden">
-          <div className="p-8">
+        <div className="bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800/50 overflow-hidden shrink-0">
+          <div className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               
               <div className="space-y-4">
@@ -89,8 +89,6 @@ function ProductDetail() {
                 <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
                   {product.name}
                 </h1>
-                
-                <p className="text-sm text-gray-500 font-mono">ID: {product.source_product_id}</p>
               </div>
 
               <div className="flex flex-col items-start md:items-end gap-4 min-w-[200px]">
@@ -114,8 +112,8 @@ function ProductDetail() {
         </div>
 
         {/* Price History Chart Section */}
-        <div className="bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800/50 p-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800/50 p-6 flex-grow flex flex-col">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
               <TrendingUp className="text-blue-400" size={28} />
               Price History Timeline
@@ -126,7 +124,7 @@ function ProductDetail() {
           </div>
 
           {price_history.length > 0 ? (
-            <div className="h-[400px] w-full mt-4">
+            <div className="w-full mt-4 h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={price_history} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" />
