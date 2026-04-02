@@ -1,15 +1,37 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
-from .routers import products,analytics,scraper
+from .routers import products, analytics, scraper
 
-models.Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Runs once on startup before the server begins accepting requests.
+    Seeds the default API consumer so the system works out-of-the-box.
+    """
+    models.Base.metadata.create_all(bind=engine)
+
+    from .database import SessionLocal
+    from .models import APIConsumer
+    db = SessionLocal()
+    try:
+        if not db.query(APIConsumer).filter(APIConsumer.api_key == "test_secret_key").first():
+            db.add(APIConsumer(api_key="test_secret_key"))
+            db.commit()
+    finally:
+        db.close()
+
+    yield  # Server is running — hand control back to FastAPI
+
 
 app = FastAPI(
     title="Entrupy Price Monitor API",
     description="API for tracking competitor pricing across marketplaces.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -20,22 +42,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# REGISTER THE ROUTER
 app.include_router(products.router)
 app.include_router(analytics.router)
 app.include_router(scraper.router, prefix="/scraper", tags=["Scraper"])
 
-@app.on_event("startup")
-def startup_populate_db():
-    from .database import SessionLocal
-    from .models import APIConsumer
-    db = SessionLocal()
-    # Check if our test key exists, if not, create it
-    if not db.query(APIConsumer).filter(APIConsumer.api_key == "test_secret_key").first():
-        new_consumer = APIConsumer(api_key="test_secret_key")
-        db.add(new_consumer)
-        db.commit()
-    db.close()
 
 @app.get("/")
 def read_root():

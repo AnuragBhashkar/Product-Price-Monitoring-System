@@ -70,9 +70,9 @@ function Dashboard() {
               <h2 className="text-lg font-semibold text-gray-400 mb-4 uppercase tracking-wider text-sm flex items-center gap-2">Products by Source</h2>
               <div className="space-y-3">
                 {analytics.by_source.map((item) => (
-                  <div key={item.source} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-xl border border-gray-700/30">
-                    <span className="font-medium text-gray-200">{item.source}</span>
-                    <span className="bg-blue-500/20 text-blue-400 py-1 px-3 rounded-full text-sm font-bold border border-blue-500/30">{item.count} items</span>
+                  <div key={item.source_marketplace} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-xl border border-gray-700/30">
+                    <span className="font-medium text-gray-200">{item.source_marketplace}</span>
+                    <span className="bg-blue-500/20 text-blue-400 py-1 px-3 rounded-full text-sm font-bold border border-blue-500/30">{item.total_products} items</span>
                   </div>
                 ))}
               </div>

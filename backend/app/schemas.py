@@ -1,25 +1,52 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
 from datetime import datetime
+from typing import Optional, List
 
-# Schema for the price history
-class PriceHistoryResponse(BaseModel):
+
+class PriceHistoryOut(BaseModel):
     id: int
+    product_id: int
     price: float
-    detected_at: datetime  # Fixed to match models.py
+    detected_at: datetime
 
+    # Allows Pydantic to read attributes directly from SQLAlchemy ORM objects
     model_config = ConfigDict(from_attributes=True)
 
-# Schema for the main product
-class ProductResponse(BaseModel):
+
+class ProductOut(BaseModel):
     id: int
-    source_product_id: str
     source_marketplace: str
+    source_product_id: str
     name: str
     category: str
     current_price: float
-    url: Optional[str] = None # <--- Update this line
+    url: Optional[str] = None
     last_updated: datetime
-    price_history: List[PriceHistoryResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductDetailOut(BaseModel):
+    product: ProductOut
+    price_history: List[PriceHistoryOut]
+
+
+class SourceStatOut(BaseModel):
+    source_marketplace: str
+    total_products: int
+    average_price: float
+
+
+class CategoryStatOut(BaseModel):
+    category: str
+    total_products: int
+    average_price: float
+
+
+class AnalyticsOut(BaseModel):
+    by_source: List[SourceStatOut]
+    by_category: List[CategoryStatOut]
+
+
+class MessageResponse(BaseModel):
+    message: str
