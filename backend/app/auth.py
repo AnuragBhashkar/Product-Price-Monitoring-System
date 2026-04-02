@@ -12,11 +12,15 @@ def verify_api_key(
     db: Session = Depends(get_db)
 ):
     if not api_key:
-        raise HTTPException(status_code=401, detail="API Key header missing")
+        raise HTTPException(status_code=401, detail="Invalid or missing API Key")
     
     # Check if the key exists in our APIConsumer table
     consumer = db.query(APIConsumer).filter(APIConsumer.api_key == api_key).first()
     if not consumer:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+        raise HTTPException(status_code=401, detail="Invalid or missing API Key")
+        
+    # Track usage per request
+    consumer.request_count += 1
+    db.commit()
     
     return api_key

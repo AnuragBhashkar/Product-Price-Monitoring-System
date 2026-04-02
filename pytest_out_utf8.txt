@@ -1,0 +1,55 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\HP\OneDrive\Desktop\Product-Price-Monitoring-System
+plugins: anyio-4.10.0, langsmith-0.4.27, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 8 items
+
+backend\tests\test_api.py F....                                          [ 62%]
+backend\tests\test_scraper.py ...                                        [100%]
+
+================================== FAILURES ===================================
+________________________ test_missing_api_key_rejected ________________________
+
+    def test_missing_api_key_rejected():
+        """Edge Case: Ensure requests without an API key get 401 Unauthorized."""
+        response = client.get("/products/")
+        assert response.status_code == 401
+>       assert response.json()["detail"] == "Invalid or missing API Key"
+E       AssertionError: assert 'API Key header missing' == 'Invalid or missing API Key'
+E         
+E         - Invalid or missing API Key
+E         + API Key header missing
+
+backend\tests\test_api.py:59: AssertionError
+============================== warnings summary ===============================
+backend\app\main.py:28
+  C:\Users\HP\OneDrive\Desktop\Product-Price-Monitoring-System\backend\app\main.py:28: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\applications.py:4495
+  C:\Users\HP\AppData\Local\Programs\Python\Python313\Lib\site-packages\fastapi\applications.py:4495: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+backend/tests/test_api.py::test_missing_api_key_rejected
+backend/tests/test_api.py::test_invalid_api_key_rejected
+backend/tests/test_api.py::test_get_products_success
+backend/tests/test_api.py::test_filter_products_by_category
+backend/tests/test_api.py::test_get_nonexistent_product
+  C:\Users\HP\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_api.py::test_missing_api_key_rejected - AssertionEr...
+=================== 1 failed, 7 passed, 7 warnings in 1.28s ===================

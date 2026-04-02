@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
 from ..models import Product
-from ..dependencies import verify_api_key
+from ..auth import verify_api_key
 
 router = APIRouter(
     prefix="/analytics",

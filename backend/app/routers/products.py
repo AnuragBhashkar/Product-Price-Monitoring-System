@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from ..database import get_db
-from ..models import Product
+from ..models import Product, PriceHistory
 from ..auth import verify_api_key
 
 router = APIRouter(
@@ -37,3 +37,21 @@ def get_products(
 
     # Return the filtered results (limit to 100 so we don't crash the browser later)
     return query.limit(100).all()
+
+@router.get("/{product_id}")
+def get_product_details(product_id: int, db: Session = Depends(get_db)):
+    """Fetch a single product and its complete price history."""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    # Get all price records for this product, sorted from oldest to newest
+    history = db.query(PriceHistory).filter(
+        PriceHistory.product_id == product_id
+    ).order_by(PriceHistory.detected_at.asc()).all()
+    
+    return {
+        "product": product,
+        "price_history": history
+    }

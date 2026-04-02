@@ -27,3 +27,8 @@ export const triggerScraper = async () => {
     const response = await apiClient.post('/scraper/run');
     return response.data;
 };
+
+export const fetchProductDetails = async (productId) => {
+    const response = await apiClient.get(`/products/${productId}`);
+    return response.data;
+};
