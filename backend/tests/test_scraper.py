@@ -29,7 +29,7 @@ def test_extract_product_data_fallback_keys():
     assert result["source_product_id"] == "xyz-999"
     assert result["name"] == "Rolex Watch"
     assert result["current_price"] == 5000.0
-    assert result["category"] == "Uncategorized" # Default fallback
+    assert result["category"] == "Other / Accessories" # Default fallback
 
 @pytest.mark.asyncio
 async def test_retry_decorator_success_after_failure():
