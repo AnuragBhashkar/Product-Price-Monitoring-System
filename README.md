@@ -6,6 +6,17 @@ The architecture dynamically ingests product data, tracks sub-dollar price fluct
 
 ---
 
+## 📑 Table of Contents
+- [📸 Project Showcase](#-project-showcase)
+- [🚀 Quick Start Guide](#-quick-start-guide)
+- [📂 Project Structure](#-project-structure)
+- [🧠 Strategic Design Decisions](#-strategic-design-decisions)
+- [📖 Comprehensive API Documentation](#-comprehensive-api-documentation)
+- [🧪 Testing & Quality Assurance](#-testing--quality-assurance)
+- [🚧 Roadmap & Known Limitations](#-roadmap--known-limitations)
+
+---
+
 ## 📸 Project Showcase
 
 ### 📊 System Dashboard
@@ -180,10 +191,8 @@ Mutates the anomaly state, allowing the UI to instantly dismiss the floating toa
 
 We do not just test the "happy path". The testing suite leverages heavily isolated, in-memory SQLite payloads (`sqlite:///:memory:`) to guarantee total state isolation across runs. 
 
-Run the test suite via: 
-```bash
-python -m pytest backend/tests/
-```
+Run the test suite via: `python -m pytest backend/tests/`
+
 **Exactly 11 End-to-End Tests Implemented:**
 1. `test_invalid_api_key`: Asserts secure `401 Unauthorized` rejection envelopes securely.
 2. `test_valid_api_key`: Verifies JWT/API Key handshake acceptance.
